@@ -17,7 +17,7 @@ The project runs on top of Python 3.12.2 and it requires the following libraries
 
 Before running the script, there should be present 3 xlsx files, inside of a "data" local folder: ["data\\Weight_Behavior.xlsx", "data\\Elevated_Maze.xlsx", "data\\NOR-Test.xlsx"]
 
-The execution of the scripts takes about 70 seconds and about 90 figures are created.
+The execution of the script takes about 70 seconds and about 90 figures are created.
 
 While all the effort could have been reduced to 1/3 using multiprocessing, at the moment this is not possible.
 
