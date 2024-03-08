@@ -1,3 +1,19 @@
+"""
+This script is part of PMS (Python for Medical Statistics) project
+The following resources were used during the build of this project
+https://www.geeksforgeeks.org/how-to-perform-a-one-way-anova-in-python/
+https://www.statology.org/one-way-anova-python/
+https://www.reneshbedre.com/blog/anova.html
+
+The project has 2 classes
+- TableNormalizer which is used to filter the initial data-sets (provided as XLSX files), removing noise, comments 
+  as well as some filled cells which are not part of valid tables
+  This class must be improved an parametrized in order to allow researchers apply their own filters
+- MedicalStatistics which is used to perform various computations on the normalized tables and get graphics and
+  statistics out of the data
+  This class must also be improved in order to allow researchers decide the type of statistics and customize the way the graphics are built
+"""
+
 import statistics
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -221,7 +237,7 @@ class MedicalStatistics:
             self.named_tables = { tm : table for (tm, table) in list(zip(table_names, self.tables)) }   
         if focus_cols != None:
             self.focus_col_header = focus_cols         
-
+    
     def SingleTable_Stats(self):
         print(self.table.describe())
         plt.gcf().subplots_adjust(wspace=1, hspace=1)
@@ -233,7 +249,7 @@ class MedicalStatistics:
         plt.savefig(f'{self.suffix}_scatter-matrix.png')
 
     def SingleTable_Individual(self):
-        #de compartimentat corect sub-plot-urile
+        #fix-me - sub-plots must be auto-configured depending on the size of the data-set        
         fig, ax = plt.subplots(4, 3)
         fig.set_size_inches([10, 10])
         fig.tight_layout(pad=1.5)    
