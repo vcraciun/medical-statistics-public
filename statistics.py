@@ -346,7 +346,7 @@ class MedicalStatistics:
         #general statisticis for each of the initial set of tables
         for i, (k, v) in enumerate(self.named_tables.items()):
             v=v.astype(float)
-            print(v.describe())
+            #print(v.describe())
             plt.gcf().subplots_adjust(wspace=1, hspace=1)
             v.plot(kind='box', subplots=True, layout=(4,3), sharex=False, sharey=False, figsize=[10,10])
             plt.savefig(f"{self.suffix}_{k}_box-plot.png")
@@ -383,12 +383,11 @@ class MedicalStatistics:
             plt.legend()
             plt.savefig(f"{self.suffix}_{k}_mean_std_regroup.png")
 
-    def MultipleTable_SexMeanStdPerGroup(self):
+    def MultipleTable_SexMeanStdPerGroup(self):        
         for i, (k, v) in enumerate(self.focus_tables.items()): 
+            print(f"male_female_mean_std_per_timp_intrari [{k}]")
             boys_sub_table = v.iloc[0:self.indivizi//2,:]
             girls_sub_table = v.iloc[self.indivizi//2:self.indivizi,:]
-            print(boys_sub_table)
-            print(girls_sub_table)
             boy_avgs = list(boys_sub_table.mean())
             girl_avgs = list(girls_sub_table.mean())
             boy_std = list(boys_sub_table.std())
@@ -399,6 +398,25 @@ class MedicalStatistics:
             max_val = max(maxs)
             ind = np.arange(self.indivizi) 
             width = 0.35 
+
+            print('male_sub_table')
+            print(boys_sub_table)
+            print(' ')
+            print('female_sub_table')
+            print(girls_sub_table)
+            print(' ')
+            print('male_mean')
+            print(boy_avgs)
+            print(' ')
+            print('female mean')
+            print(girl_avgs)
+            print(' ')
+            print('male_std')
+            print(boy_std)
+            print(' ')
+            print('female std')
+            print(girls_std)
+            print(' ')
 
             fig = plt.subplots(figsize =(12, 6)) 
             p1 = plt.bar(ind, boy_avgs, width, yerr = boy_std)
@@ -422,8 +440,11 @@ class MedicalStatistics:
             plt.grid()
             plt.savefig(f"{self.suffix}_{k}_before_anova.png")
             
+            print(f"Tabelul {k} pentru anova")
+            print(v)
+
             table_columns = list(self.named_tables.keys())
-            fvalue, pvalue = stats.f_oneway(v[table_columns[0]], v[table_columns[1]], v[table_columns[2]], v[table_columns[3]], v[table_columns[4]])            
+            fvalue, pvalue = stats.f_oneway(v[table_columns[0]], v[table_columns[1]], v[table_columns[2]], v[table_columns[3]], v[table_columns[4]], v[table_columns[5]])            
             print(fvalue, pvalue)
             model = ols("value ~ C(treatments)", data=df_melt).fit()
             anova_table = sm.stats.anova_lm(model, typ=2)
@@ -432,19 +453,23 @@ class MedicalStatistics:
             res.anova_stat(df=df_melt, res_var='value', anova_model="value ~ C(treatments)")
             print(res.anova_summary)
 
-            fig1, ax1 = plt.subplots(figsize =(12, 6))
-            fig2, ax2 = plt.subplots(figsize =(12, 6))
+            fig1, ax1 = plt.subplots(figsize =(10, 10))            
             #anova residuals
-            sm.qqplot(res.anova_std_residuals, line='45')
+            print(f"rezidurile anova [{k}]")            
+            print(res.anova_std_residuals)
+            sm.qqplot(res.anova_std_residuals, line='45')                        
             plt.xlabel("Theoretical Quantiles")
             plt.ylabel("Standardized Residuals")
             plt.grid()
             plt.savefig(f"{self.suffix}_{k}_anova_residuals.png")
+            
             # histogram
-            ax2.hist(res.anova_model_out.resid, bins='auto', histtype='bar', ec='k') 
+            fig2, ax2 = plt.subplots(figsize =(10, 10))
+            ax2.hist(res.anova_model_out.resid, bins='auto', histtype='bar', ec='k')             
+            print(f"histograme anova [{k}]")
+            print(res.anova_model_out.resid)
             plt.xlabel("Residuals")
             plt.ylabel('Frequency')
-            plt.grid()
             fig2.savefig(f"{self.suffix}_{k}_anova_model.png")            
 
     def ProcessMultipleTables(self):
@@ -523,19 +548,21 @@ sheets = {
     "Nor": "data\\NOR-Test.xlsx"
 }
 
+plt.rcParams.update({'axes.titlesize': 'large'})
+
 for i, (name, path) in enumerate(sheets.items()):
     df = pd.DataFrame(pd.read_excel(path))
     tn = TableNormalizer(df)
     specs = tn.find_tables()
     if len(specs) == 1:
         tables = tn.normalize_data_single_table()
-        statistic = MedicalStatistics(name, tables, 6, table_names = ['ConG', 'JG', 'JDG', 'PG', 'PGD', 'WT'])
+        statistic = MedicalStatistics(name, tables, 6, table_names = ['ConG', 'JG', 'JDG', 'PG', 'PDG', 'WT'])
         statistic.ProcessSingleTable()
     else:
         tables = tn.normalize_data_multiple_tables()
         if name != "Nor":
-            statistic = MedicalStatistics(name, tables, 6, table_names = ['ConG', 'JG', 'JDG', 'PG', 'PGD', 'WT'], focus_cols = {'Bdi':0, 'Bdt': 1, 'C': 2, 'Bii': 3, 'Bit': 4})
+            statistic = MedicalStatistics(name, tables, 6, table_names = ['ConG', 'JG', 'JDG', 'PG', 'PDG', 'WT'], focus_cols = {'Bdi':0, 'Bdt': 1, 'C': 2, 'Bii': 3, 'Bit': 4})
             statistic.ProcessMultipleTables()
         else:
-            statistic = MedicalStatistics(name, tables, 6, table_names = ['ConG', 'JG', 'JDG', 'PG', 'PGD', 'WT'])
+            statistic = MedicalStatistics(name, tables, 6, table_names = ['ConG', 'JG', 'JDG', 'PG', 'PDG', 'WT'])
             statistic.PerformNORTest()
