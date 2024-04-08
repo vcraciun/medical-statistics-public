@@ -260,17 +260,26 @@ class MedicalStatistics:
         plt.savefig(f'{self.suffix}_individual.png')        
 
     def SingleTable_PerLot(self):
-        fig, ax = plt.subplots(3, 2)
-        fig.set_size_inches([10, 10])
+        #fig, ax = plt.subplots(3, 2)
+        fig,ax = plt.subplots(figsize =(15, 15)) 
+        #fig.set_size_inches([10, 10])
         fig.tight_layout(pad=1.5)            
         for i in range(self.loturi):
             sub_table = self.table.iloc[i*self.indivizi:(i+1)*self.indivizi,:]
             sub_table.index = range(len(sub_table.index))
             means = [sub_table.iloc[:,j].mean() for j in range(1, len(sub_table.columns))]
-            ax[i//2,i%2].plot(means)
-            ax[i//2,i%2].grid()
-            ax[i//2,i%2].set_title(self.names[i*self.indivizi][:-1])
-        plt.savefig(f'{self.suffix}_per_lot.png')
+            ax.plot(range(1,13), means, label=self.names[i*self.indivizi][:-1], linewidth=5)
+            #ax[i//2,i%2].plot(means)
+            #ax[i//2,i%2].grid()
+            #ax[i//2,i%2].set_title(self.names[i*self.indivizi][:-1])        
+        ax.grid()        
+        plt.xlabel("Timeline (Week 1-12)", fontsize=30)
+        plt.ylabel("Weight", fontsize = 30)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        plt.legend(fontsize=24)
+        plt.savefig(f'{self.suffix}_per_lot.png', bbox_inches='tight', dpi=300)
+        #fig.savefig(f'{self.suffix}_per_lot.svg', format='svg', dpi=1200)
 
     def SingleTable_PerSex(self):
         fig1, ax1 = plt.subplots(3, 2)
@@ -323,11 +332,11 @@ class MedicalStatistics:
         fig.savefig(f'{self.suffix}_KMeans.png')
 
     def ProcessSingleTable(self):
-        self.SingleTable_Stats()
-        self.SingleTable_Individual()
+        #self.SingleTable_Stats()
+        #self.SingleTable_Individual()
         self.SingleTable_PerLot()
-        self.SingleTable_PerSex()
-        self.SingleTable_KMeans(8)
+        #self.SingleTable_PerSex()
+        #self.SingleTable_KMeans(8)
 
     #--------------------------------------------------------------------------------
     def ArrangeFocusedTables(self):
@@ -429,57 +438,93 @@ class MedicalStatistics:
             plt.legend((p1[0], p2[0]), ('male', 'female'))
             plt.savefig(f"{self.suffix}_{k}_male_female_mean_std_per_timp_intrari.png")     
 
-    def MultipleTable_Anova1Way(self):
-        for i, (k, v) in enumerate(self.focus_tables.items()): 
+    def MultipleTable_Anova1Way(self, y_labels):        
+        for i, (k, v) in enumerate(self.focus_tables.items()):    
             v=v.astype(float)
             df_melt = pd.melt(v.reset_index(), id_vars=['index'], value_vars=list(self.named_tables.keys()))
             df_melt.columns = ['index', 'treatments', 'value']
-            fig, ax = plt.subplots(figsize =(12, 6))
-            ax = sns.boxplot(x='treatments', y='value', data=df_melt, color='#99c2a2')
-            ax = sns.swarmplot(x='treatments', y="value", data=df_melt, color='#7d0013')
-            plt.grid()
-            plt.savefig(f"{self.suffix}_{k}_before_anova.png")
-            
-            print(f"Tabelul {k} pentru anova")
+            print(k)
             print(v)
+            print(df_melt)
+            
+            fig, ax = plt.subplots(1, 4, figsize =(40, 10), dpi=300)
+            ax[3].xaxis.set_tick_params(labelsize=20)
+            ax[2].xaxis.set_tick_params(labelsize=20)
+            ax[1].xaxis.set_tick_params(labelsize=20)
+            ax[0].xaxis.set_tick_params(labelsize=20)            
+            ax[3].yaxis.set_tick_params(labelsize=20)
+            ax[2].yaxis.set_tick_params(labelsize=20)
+            ax[1].yaxis.set_tick_params(labelsize=20)
+            ax[0].yaxis.set_tick_params(labelsize=20)
+
+            sns.boxplot(x='treatments', y='value', data=df_melt, color='#99c2a2', ax=ax[2])
+            sns.swarmplot(x='treatments', y="value", data=df_melt, color='#7d0013', ax=ax[2])      
+            ax[2].set_xlabel('Groups', fontsize=20)
+            ax[2].set_ylabel(y_labels[2][i], fontsize=20)      
+            ax[2].grid()
+                        
+            #print(f"Tabelul {k} pentru anova")
+            #print(v)
 
             table_columns = list(self.named_tables.keys())
             fvalue, pvalue = stats.f_oneway(v[table_columns[0]], v[table_columns[1]], v[table_columns[2]], v[table_columns[3]], v[table_columns[4]], v[table_columns[5]])            
-            print(fvalue, pvalue)
+            ax[3].bar(['F', 'p'], [fvalue, pvalue])
+            for el in zip(['F', 'p'], [fvalue, pvalue]):
+                ax[3].text(el[0], int(el[1] * 1000)/1000, int(el[1] * 1000)/1000, ha = 'center', fontsize=24)
+            ax[3].set_xlabel('Anova Variables', fontsize=20)
+            if len(k) == 3 and k[2] == '%':
+                ax[3].set_ylabel('Anova Values (' + k[:-1] + ')', fontsize=20)
+            else:
+                ax[3].set_ylabel('Anova Values (' + k + ')', fontsize=20)
+
+            #print(fvalue, pvalue)
             model = ols("value ~ C(treatments)", data=df_melt).fit()
             anova_table = sm.stats.anova_lm(model, typ=2)
-            print(anova_table)
+            #print(anova_table)
             res = stat()
             res.anova_stat(df=df_melt, res_var='value', anova_model="value ~ C(treatments)")
-            print(res.anova_summary)
+            #print(res.anova_summary)
 
-            fig1, ax1 = plt.subplots(figsize =(10, 10))            
+            #fig1, ax1 = plt.subplots(figsize =(10, 10))            
             #anova residuals
-            print(f"rezidurile anova [{k}]")            
+            print(f"rezidurile anova QQPLOT [{k}]")            
             print(res.anova_std_residuals)
-            sm.qqplot(res.anova_std_residuals, line='45')                        
-            plt.xlabel("Theoretical Quantiles")
-            plt.ylabel("Standardized Residuals")
-            plt.grid()
-            plt.savefig(f"{self.suffix}_{k}_anova_residuals.png")
+            sm.qqplot(res.anova_std_residuals, line='45', ax=ax[1])
+            ax[1].set_xlabel('Theoretical Quantiles', fontsize=20)  
+            if len(k) == 3 and k[2] == '%':
+                ax[1].set_ylabel(y_labels[1] + ' (' + k[:-1] + ')', fontsize=20)      
+            else:
+                ax[1].set_ylabel(y_labels[1] + ' (' + k + ')', fontsize=20)      
+            ax[1].grid()
+            #plt.xlabel("Theoretical Quantiles")
+            #plt.ylabel("Standardized Residuals")
+            #plt.grid()
+            #plt.savefig(f"{self.suffix}_{k}_anova_residuals.png")
             
             # histogram
-            fig2, ax2 = plt.subplots(figsize =(10, 10))
-            ax2.hist(res.anova_model_out.resid, bins='auto', histtype='bar', ec='k')             
-            print(f"histograme anova [{k}]")
+            #fig2, ax2 = plt.subplots(figsize =(10, 10))
+            #ax2.hist(res.anova_model_out.resid, bins='auto', histtype='bar', ec='k')             
+            ax[0].hist(res.anova_model_out.resid, bins='auto', histtype='bar', ec='k')             
+            ax[0].set_xlabel('Anova Residuals', fontsize=20)
+            if len(k) == 3 and k[2] == '%':
+                ax[0].set_ylabel(y_labels[0] + ' (' + k[:-1] + ')', fontsize=20)      
+            else:
+                ax[0].set_ylabel(y_labels[0] + ' (' + k + ')', fontsize=20)      
+            print(f"Histograme anova [{k}]")
             print(res.anova_model_out.resid)
-            plt.xlabel("Residuals")
-            plt.ylabel('Frequency')
-            fig2.savefig(f"{self.suffix}_{k}_anova_model.png")            
+            #plt.xlabel("Residuals")
+            #plt.ylabel('Frequency')
+            #fig2.savefig(f"{self.suffix}_{k}_anova_model.png")            
+            plt.savefig(f"{self.suffix}_{k}_anova_model.png", bbox_inches='tight')
 
-    def ProcessMultipleTables(self):
+    def ProcessMultipleTables(self, y_labels):
         self.ArrangeFocusedTables()
-        self.MultipleTable_Stats()
-        self.MultipleTable_GeneralMeanStd()
-        self.MultipleTable_SexMeanStdPerGroup()
-        self.MultipleTable_Anova1Way()
+        #self.MultipleTable_Stats()
+        #self.MultipleTable_GeneralMeanStd()
+        #self.MultipleTable_SexMeanStdPerGroup()
+        self.MultipleTable_Anova1Way(y_labels)
 
-    def PerformNORTest(self):
+    def PerformNORTest(self, y_labels):
         self.RI_per_grup_tables = {}                
         new_col_names = ['OF%', 'ON1', 'ON24']
 
@@ -527,20 +572,20 @@ class MedicalStatistics:
         #---------------------------------------------------------------
 
         #general statistics for each of the mixed set of tables
-        for i, (k, v) in enumerate(self.focus_tables.items()):            
-            v=v.astype(float)
-            print(v.describe())
-            plt.gcf().subplots_adjust(wspace=1, hspace=1)
-            v.plot(kind='box', subplots=True, layout=(3,2), sharex=False, sharey=False, figsize=[10,10])
-            plt.savefig(f"{self.suffix}_{k}_box-plot.png")
-            v.hist(figsize=[10,10])
-            plt.savefig(f"{self.suffix}_{k}_histograms.png")    
-            pandas.plotting.scatter_matrix(v, figsize=[10,10])    
-            plt.savefig(f"{self.suffix}_{k}_scatter-matrix.png")
+        #for i, (k, v) in enumerate(self.focus_tables.items()):            
+        #    v=v.astype(float)
+        #    print(v.describe())
+        #    plt.gcf().subplots_adjust(wspace=1, hspace=1)
+        #    v.plot(kind='box', subplots=True, layout=(3,2), sharex=False, sharey=False, figsize=[10,10])
+        #    plt.savefig(f"{self.suffix}_{k}_box-plot.png")
+        #    v.hist(figsize=[10,10])
+        #    plt.savefig(f"{self.suffix}_{k}_histograms.png")    
+        #    pandas.plotting.scatter_matrix(v, figsize=[10,10])    
+        #    plt.savefig(f"{self.suffix}_{k}_scatter-matrix.png")
 
-        self.MultipleTable_GeneralMeanStd()
-        self.MultipleTable_SexMeanStdPerGroup()
-        self.MultipleTable_Anova1Way()
+        #self.MultipleTable_GeneralMeanStd()
+        #self.MultipleTable_SexMeanStdPerGroup()
+        self.MultipleTable_Anova1Way(y_labels)
 
 sheets = {
     "Weights": "data\\Weight_Behavior.xlsx",
@@ -562,7 +607,8 @@ for i, (name, path) in enumerate(sheets.items()):
         tables = tn.normalize_data_multiple_tables()
         if name != "Nor":
             statistic = MedicalStatistics(name, tables, 6, table_names = ['ConG', 'JG', 'JDG', 'PG', 'PDG', 'WT'], focus_cols = {'Bdi':0, 'Bdt': 1, 'C': 2, 'Bii': 3, 'Bit': 4})
-            statistic.ProcessMultipleTables()
+            statistic.ProcessMultipleTables(['Anova Residuals Frequency', 'Standardized Anova Residuals', ['Number of Entrances (Bdi)\nfor individuals (red dots) in each group', 'Time Spent (Bdt)\nFor individuals (red dots) in each group', 'Time Spent (C)\nFor individuals (red dots) in each group', 'Number of Entrances (Bii)\nfor individuals (red dots) in each group', 'Time Spent (Bit)\nFor individuals (red dots) in each group', ]])
         else:
             statistic = MedicalStatistics(name, tables, 6, table_names = ['ConG', 'JG', 'JDG', 'PG', 'PDG', 'WT'])
-            statistic.PerformNORTest()
+            statistic.PerformNORTest(['Anova Residuals Frequency', 'Standardized Anova Residuals', ['Object Explore Time (OF)\nfor individuals (red dots) in each group', 'Object Explore Time (ON1)\nfor individuals (red dots) in each group', 'Object Explore Time (ON24)\nfor individuals (red dots) in each group']])
+
